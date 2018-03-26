@@ -1,28 +1,29 @@
 # -*- coding: utf-8 -*-
-# Version: 1.1.0
+# Version: 1.1.1
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import json
+import os.path, errno
 
-param_map = {
-             "厂商指导价":"official_price", 
-             "经销商参考价":"real_price",
-             "厂商":"manufacturer",
-             "级别":"class",
-             "能源类型":"power",
-             "上市时间":"launch_date",
-             "纯电续航里程":"battery_life",
-             "电池充电时间":"charging_time",
-             "最大功率(kW)":"max_kW",
-             "最大扭矩(N·m)":"max_Nm",
-             "发动机":"engine",
-             "变速箱":"transmission",
-             "长*宽*高(mm)":"l_w_h",
-             "车身结构":"structure",
-             "最高车速(km/h)":"max_speed",
-             "官方0-100km/h加速(s)":"0_to_100",
-             "整车质保":"warranty"
-         }
+#param_map = {
+#             "厂商指导价":"official_price", 
+#             "经销商参考价":"real_price",
+#             "厂商":"manufacturer",
+#             "级别":"class",
+#             "能源类型":"power",
+#             "上市时间":"launch_date",
+#             "纯电续航里程":"battery_life",
+#             "电池充电时间":"charging_time",
+#             "最大功率(kW)":"max_kW",
+#             "最大扭矩(N·m)":"max_Nm",
+#             "发动机":"engine",
+#             "变速箱":"transmission",
+#             "长*宽*高(mm)":"l_w_h",
+#             "车身结构":"structure",
+#             "最高车速(km/h)":"max_speed",
+#             "官方0-100km/h加速(s)":"0_to_100",
+#             "整车质保":"warranty"
+#         }
 urls = [
         "https://car.autohome.com.cn/config/spec/26916.html",
         "https://car.autohome.com.cn/config/series/692.html",
@@ -33,7 +34,8 @@ urls = [
         "https://car.autohome.com.cn/config/series/110.html",
         "https://car.autohome.com.cn/config/series/364.html",
         "https://car.autohome.com.cn/config/series/209.html",
-        "https://car.autohome.com.cn/config/series/872.html"
+        "https://car.autohome.com.cn/config/series/872.html",
+        "https://car.autohome.com.cn/config/series/2664-8052.html"
         ]
 
 driver = webdriver.Chrome()
@@ -92,25 +94,28 @@ def find_car_name(soup):
 
 #Car parameter table
 def find_car_parameter(soup):
-    for table in soup.findAll("table", {"class":"tbcs"})[1:3]:
+    for table in soup.findAll("table", {"class":"tbcs"}):
         for tr in table.findAll("tr"):
             if ('style' in tr.attrs) and (tr.attrs['style'] == 'display:none'):
                 continue
             else:
+                origin_param = ""
+                div = None
                 th = tr.find("th")
-                div = th.find("div")
-                key_param = ""
+                if th is not None:
+                    div = th.find("div")
+#                key_param = ""
                 if div is not None:
                     origin_param = process_content(div.contents)
-                    if origin_param in param_map:
-                        key_param = param_map[origin_param]
-                if key_param is not "":
+#                    if origin_param in param_map:
+#                        key_param = param_map[origin_param]
+                if origin_param is not "":
                     index = 0
                     for td in tr.findAll("td"):
                         car = car_list[index]
                         index += 1
                         div = td.find("div")
-                        car[key_param] = process_content(div.contents)
+                        car[origin_param] = process_content(div.contents)
              
 #main process
 for url in urls:
@@ -122,8 +127,16 @@ for url in urls:
     filename = find_title(soup).strip('\n')
     find_car_name(soup)
     find_car_parameter(soup)
-    #Output                
-    file = open(filename, 'w', encoding = 'UTF-8')
+    #Output               
+    save_path = os.path.join(os.getcwd(), 'result')
+    if not os.path.exists(save_path):
+        try:
+            os.makedirs(save_path)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+    complete_name = os.path.join(save_path, filename)  
+    file = open(complete_name, 'w', encoding = 'UTF-8')
     file.write(json.dumps(car_list, ensure_ascii=False))  
     file.close()
 
