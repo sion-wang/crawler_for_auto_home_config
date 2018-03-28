@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Version: 1.1.1
+# Version: 1.2.0
+
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import json
@@ -35,6 +36,14 @@ urls = [
         "https://car.autohome.com.cn/config/series/364.html",
         "https://car.autohome.com.cn/config/series/209.html",
         "https://car.autohome.com.cn/config/series/872.html",
+        "https://car.autohome.com.cn/config/series/669.html",
+        "https://car.autohome.com.cn/config/series/4307.html",
+        "https://car.autohome.com.cn/config/series/2476.html",
+        "https://car.autohome.com.cn/config/series/255.html",
+        "https://car.autohome.com.cn/config/series/3097.html",
+        "https://car.autohome.com.cn/config/series/201.html",
+        "https://car.autohome.com.cn/config/series/2988.html",
+        "https://car.autohome.com.cn/config/series/382.html",
         "https://car.autohome.com.cn/config/series/2664-8052.html"
         ]
 
@@ -54,8 +63,15 @@ def process_content(contents):
     for content in contents:
         #判斷是否為html格式
         if ('</' in str(content)):
-            #若是span元素，以contents數量判斷是否為偽類
-            if('span' in str(content)):
+            if('ul' in str(content)):
+                #ul element: for color
+                for li in content.findAll('li'):
+                    if(result is not ''):
+                        result += (',' + li.contents[0]['title'])
+                    else:
+                        result += li.contents[0]['title']
+            elif('span' in str(content)):
+                #若是span元素，以contents數量判斷是否為偽類
                 if len(content.contents) > 0:
                     #非偽類處理
                     result += process_content(content.contents)
@@ -69,7 +85,7 @@ def process_content(contents):
                         script = "return window.getComputedStyle(document.getElementsByClassName('%s')[0],'before').getPropertyValue('content')" %(content['class'][0])
                         x = driver.execute_script(script).strip('\"')
                         dictionary[cValue] = x
-                        result += x
+                        result += x    
             else:
                 #其它html元素處理
                 result += process_content(content.contents)
@@ -141,4 +157,5 @@ for url in urls:
     file.close()
 
 driver.quit
+    
     
